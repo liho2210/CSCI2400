@@ -326,14 +326,30 @@ int sign(int x)
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) 
-{
-    int sign_x, sign_y, r;
+{    
+    // variables to track sign of x and y and to hold later value for comparison
+    int sign_x, sign_y, temp;
     
-    sign_x = (x >> 31) & 1;
-    sign_y = (y >> 31) & 1;
+    // shift both x and y 31 bits to right resulting in sign bit in the LSB place
+    // double bang operator to account for any 1's in the leading bits
+    sign_x = !!(x >> 31);
+    sign_y = !!(y >> 31);
     
-    r = (!(sign_x ^ sign_y)) & (((x + ~y) >> 31) & 1);
-    return r | ((!sign_y) & sign_x);
+    // xor comparison of x and y signs with logical negation
+    // if sign_x = sign_y then result will be !0 = 1
+    // if sign_x != sign_y then result will be !n = 0
+    temp = (!(sign_x ^ sign_y));
+    
+    // flip bits of y and to x then right shift sum 31 bits and compare to 1
+    // if y is signed and x is not then the result will be a one in the LSB place
+    // doube bang to negate possible leading 1's
+    // temp var is now result of temp bits compared to the LSB from the previous sum
+    // if y < x then temp would be 0 so 0 & 0 = 0
+    // if y >= x then temp would be 1 so 1 & 1 = 1
+    temp = temp & !!((x + ~y) >> 31);
+    
+    // finally we return temp or negated y sign and x sign
+    return temp | ((!sign_y) & sign_x);
 }
 /* 
  * logicalShift - shift x to the right by n, using a logical shift
@@ -345,6 +361,8 @@ int isLessOrEqual(int x, int y)
  */
 int logicalShift(int x, int n) 
 {
+    // *******
+    //
     return (x >> n) & ~(((1 << 31) >> n) << 1);
 }
 /* 
@@ -357,11 +375,13 @@ int logicalShift(int x, int n)
  */
 int rotateLeft(int x, int n) 
 {
+    // *******
+    // 
     int a = ~(~0 << n);
-    int b = 33+~n;
+    int b = 33 + ~n;
     b = (x >> b);
-    b = a&b;
-    return b+(x<<n);
+    b = a & b;
+    return b + (x << n);
 }
 /*
  * 4-pt puzzles
@@ -378,9 +398,18 @@ int rotateLeft(int x, int n)
  */
 int satAdd(int x, int y) 
 {
+    // if x and y have different signs than the sign of thier sum then the sum is overflow
+    // Tmax should be 32 bits of 1's Tmin should be all 1's with a 0 in the signed bit
+    // we add the values to find sum 
+    // xor comparison between each value and the sum
+    // compare the two answers and right shift to place the signed bit in LSB
+    // overflow var now represents the sign of the overflow
+    // compare overflow with 31 or 11111 and shift sum by that value
+    // add back the overflow shifted 31 bits left and return
     int sum = (x+y);
-    int overflow =((sum^x)&(sum^y))>> 31;
-    return (sum >> (overflow & 31)) + (overflow << 31);
+    int overflow = ((sum^x)&(sum^y)) >> 31;
+    sum = (sum >> (overflow & 31)) + (overflow << 31);
+    return sum;
 }
 /*
  * Extra credit
@@ -398,7 +427,8 @@ int satAdd(int x, int y)
  */
 unsigned float_abs(unsigned uf) 
 {
-    
+    // *******
+    // uf is NaN when exp is 0xff and frac is not 0.get abs by uf&0x7fffffff.
     unsigned temp = (uf & 0x7fffffff) ^ 0x7f800000;  
     if((0 < temp) && (temp <= 0x007fffff)) 
     {
@@ -406,7 +436,7 @@ unsigned float_abs(unsigned uf)
     }
     else
     {
-        return uf&0x7fffffff;
+        return uf & 0x7fffffff;
     }  
 }
 /* 
